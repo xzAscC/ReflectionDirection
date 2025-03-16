@@ -10,5 +10,6 @@ dependencies = [
     "jupyter>=1.1.1",
     "scikit-learn>=1.6.1",
     "seaborn>=0.13.2",
+    "transformers-stream-generator>=0.0.5",
     "vllm>=0.7.3",
 ]

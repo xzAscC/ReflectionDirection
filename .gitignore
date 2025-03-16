@@ -3,4 +3,4 @@
 
 *.json
 *.pt
-tmp*
+*.ipynb

@@ -2648,6 +2648,7 @@ dependencies = [
     { name = "jupyter" },
     { name = "scikit-learn" },
     { name = "seaborn" },
+    { name = "transformers-stream-generator" },
     { name = "vllm" },
 ]
 
@@ -2658,6 +2659,7 @@ requires-dist = [
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "scikit-learn", specifier = ">=1.6.1" },
     { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "transformers-stream-generator", specifier = ">=0.0.5" },
     { name = "vllm", specifier = ">=0.7.3" },
 ]
 
@@ -3226,6 +3228,15 @@ sdist = { url = "https://files.pythonhosted.org/packages/79/50/46573150944f46df8
 wheels = [
     { url = "https://files.pythonhosted.org/packages/20/37/1f29af63e9c30156a3ed6ebc2754077016577c094f31de7b2631e5d379eb/transformers-4.49.0-py3-none-any.whl", hash = "sha256:6b4fded1c5fee04d384b1014495b4235a2b53c87503d7d592423c06128cbbe03", size = 9970275 },
 ]
+
+[[package]]
+name = "transformers-stream-generator"
+version = "0.0.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "transformers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/42/c2/65f13aec253100e1916e9bd7965fe17bde796ebabeb1265f45191ab4ddc0/transformers-stream-generator-0.0.5.tar.gz", hash = "sha256:271deace0abf9c0f83b36db472c8ba61fdc7b04d1bf89d845644acac2795ed57", size = 13033 }
 
 [[package]]
 name = "triton"
