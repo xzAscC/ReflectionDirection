@@ -8,13 +8,13 @@ from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
+model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
 dataset_name = "HuggingFaceH4/MATH-500"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 model = AutoModelForCausalLM.from_pretrained(
-    model_name, device_map="auto", torch_dtype=torch.float32
-).to(DEVICE)
+    model_name, device_map="auto", torch_dtype=torch.bfloat16
+)
 
 
 # Load the MATH-500 dataset
@@ -62,15 +62,14 @@ for idx, problem in enumerate(tqdm.tqdm(problems)):
 
     # Check if response contains "Wait" or "wait"
     wait_count = response.count("Wait") + response.count("wait")
-    print("Total number of 'wait' occurrences:", wait_count)
+    # print("Total number of 'wait' occurrences:", wait_count)
     # Check if response contains "Wait" or "wait"
     os.makedirs("hidden_state", exist_ok=True)
     if "Wait" in response or "wait" in response:
-        # Save hidden states and response to reflect_responses folder
-        hidden_file = f"hidden_state/problem_{idx:04d}.pt"
-        torch.save(hidden_states, hidden_file)
         output_file = f"reflect_responses/problem_{idx:04d}.json"
     else:
         output_file = f"responses/problem_{idx:04d}.json"
+    hidden_file = f"hidden_state/problem_{idx:04d}.pt"
+    torch.save(hidden_states, hidden_file)
     with open(output_file, "w") as f:
         json.dump(response_obj, f)
