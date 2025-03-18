@@ -6,6 +6,8 @@ import tqdm
 import os
 from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer
+from utils import add_icv_layers
+
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
@@ -16,7 +18,29 @@ model = AutoModelForCausalLM.from_pretrained(
     model_name, device_map="auto", torch_dtype=torch.bfloat16
 )
 
+########################################
+last_token_before_wait = torch.load("last_token_before_wait.pt")
+last_token_before_wo_wait = torch.load("last_token_before_wo_wait.pt")
+layers = 29
+icv = torch.zeros(layers, last_token_before_wo_wait[0][0].shape[-1])
+for layer in tqdm(range(layers)):
+    token_rep_one_layer = torch.cat([
+        x[layer].mean(dim=1, keepdim=True) if x[layer].shape[1] > 1 else x[layer]
+        for x in last_token_before_wo_wait
+    ]).to("cuda:0").squeeze()
+    token_rep_one_layer = token_rep_one_layer.to(torch.float32)
+    token_before_wait = torch.cat([
+        x[layer].mean(dim=1, keepdim=True) if x[layer].shape[1] > 1 else x[layer]
+        for x in last_token_before_wait
+    ]).to("cuda:0").squeeze()
+    mean_token_rep = token_rep_one_layer.mean(dim=0)
+    mean_token_before = token_before_wait.mean(dim=0)
+    diff_means = mean_token_before - mean_token_rep
+    icv[layer] = diff_means
 
+lam = 0.12
+add_icv_layers(model, icv[1:].cuda(), [lam])
+########################################
 # Load the MATH-500 dataset
 dataset = load_dataset("HuggingFaceH4/MATH-500")
 
@@ -24,7 +48,8 @@ dataset = load_dataset("HuggingFaceH4/MATH-500")
 os.makedirs("responses", exist_ok=True)
 
 problems = dataset["test"]["problem"]
-
+os.makedirs("icv", exist_ok=True)
+torch.set_grad_enabled(False)
 # Process each problem and get response
 for idx, problem in enumerate(tqdm.tqdm(problems)):
     # Prepare prompt for inference
@@ -61,15 +86,16 @@ for idx, problem in enumerate(tqdm.tqdm(problems)):
     # print(response)
 
     # Check if response contains "Wait" or "wait"
-    wait_count = response.count("Wait") + response.count("wait")
+    # wait_count = response.count("Wait") + response.count("wait")
     # print("Total number of 'wait' occurrences:", wait_count)
     # Check if response contains "Wait" or "wait"
-    os.makedirs("hidden_state", exist_ok=True)
-    if "Wait" in response or "wait" in response:
-        output_file = f"reflect_responses/problem_{idx:04d}.json"
-    else:
-        output_file = f"responses/problem_{idx:04d}.json"
-    hidden_file = f"hidden_state/problem_{idx:04d}.pt"
-    torch.save(hidden_states, hidden_file)
+    # os.makedirs("hidden_state", exist_ok=True)
+    # if "Wait" in response or "wait" in response:
+    #     output_file = f"reflect_responses/problem_{idx:04d}.json"
+    # else:
+    #     output_file = f"responses/problem_{idx:04d}.json"
+    # hidden_file = f"hidden_state/problem_{idx:04d}.pt"
+    # torch.save(hidden_states, hidden_file)
+    output_file = f"icv/problem_{idx:04d}.json"
     with open(output_file, "w") as f:
         json.dump(response_obj, f)

@@ -8,6 +8,7 @@ dependencies = [
     "accelerate>=1.4.0",
     "datasets>=3.3.2",
     "jupyter>=1.1.1",
+    "nupy>=0.1.1",
     "scikit-learn>=1.6.1",
     "seaborn>=0.13.2",
     "transformers-stream-generator>=0.0.5",
