@@ -2,16 +2,19 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 from datasets import load_dataset
 import json
-import tqdm
 import os
+from tqdm import tqdm
 from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer
 from utils import add_icv_layers
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
+# TODO: wait number and the model size
+# TODO: wait helps or deteriorates the performance
 model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
 dataset_name = "HuggingFaceH4/MATH-500"
+# TODO: why wait and space wait is different, why .\n\n is a token instead of .
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 model = AutoModelForCausalLM.from_pretrained(
@@ -23,21 +26,48 @@ last_token_before_wait = torch.load("last_token_before_wait.pt")
 last_token_before_wo_wait = torch.load("last_token_before_wo_wait.pt")
 layers = 29
 icv = torch.zeros(layers, last_token_before_wo_wait[0][0].shape[-1])
+# for layer in tqdm(range(layers)):
+#     token_rep_one_layer = torch.cat([
+#         x[layer].mean(dim=1, keepdim=True) if x[layer].shape[1] > 1 else x[layer]
+#         for x in last_token_before_wo_wait
+#     ]).to("cuda:0").squeeze()
+#     token_rep_one_layer = token_rep_one_layer.to(torch.float32)
+#     token_before_wait = torch.cat([
+#         x[layer].mean(dim=1, keepdim=True) if x[layer].shape[1] > 1 else x[layer]
+#         for x in last_token_before_wait
+#     ]).to("cuda:0").squeeze()
+#     mean_token_rep = token_rep_one_layer.mean(dim=0)
+#     mean_token_before = token_before_wait.mean(dim=0)
+#     diff_means = mean_token_before - mean_token_rep
+#     icv[layer] = diff_means
+
+# lam = 0.12
+
+sim_list = []
+layers = 29
+icv = torch.zeros(layers, last_token_before_wo_wait[0][0].shape[-1])
+import random
+
+selected_examples = random.sample(
+    last_token_before_wo_wait, len(last_token_before_wait)
+)
+print(f"Number of selected examples: {len(selected_examples)}")
 for layer in tqdm(range(layers)):
     token_rep_one_layer = torch.cat([
         x[layer].mean(dim=1, keepdim=True) if x[layer].shape[1] > 1 else x[layer]
-        for x in last_token_before_wo_wait
+        for x in selected_examples
     ]).to("cuda:0").squeeze()
     token_rep_one_layer = token_rep_one_layer.to(torch.float32)
     token_before_wait = torch.cat([
         x[layer].mean(dim=1, keepdim=True) if x[layer].shape[1] > 1 else x[layer]
         for x in last_token_before_wait
     ]).to("cuda:0").squeeze()
-    mean_token_rep = token_rep_one_layer.mean(dim=0)
-    mean_token_before = token_before_wait.mean(dim=0)
-    diff_means = mean_token_before - mean_token_rep
-    icv[layer] = diff_means
-
+    diff_means = token_before_wait - token_rep_one_layer
+    res_mat = torch.matmul(diff_means.T, diff_means)
+    # Compute eigen decomposition (PCA) on res_mat and select the first eigenvector
+    eigenvalues, eigenvectors = torch.linalg.eigh(res_mat)
+    first_eigenvector = eigenvectors[:, -1]
+    icv[layer] = first_eigenvector
 lam = 0.12
 add_icv_layers(model, icv[1:].cuda(), [lam])
 ########################################
@@ -48,10 +78,10 @@ dataset = load_dataset("HuggingFaceH4/MATH-500")
 os.makedirs("responses", exist_ok=True)
 
 problems = dataset["test"]["problem"]
-os.makedirs("icv", exist_ok=True)
+os.makedirs("icv_pca", exist_ok=True)
 torch.set_grad_enabled(False)
 # Process each problem and get response
-for idx, problem in enumerate(tqdm.tqdm(problems)):
+for idx, problem in enumerate(tqdm(problems)):
     # Prepare prompt for inference
     inputs = tokenizer(problem, return_tensors="pt").to("cuda:0")
 
@@ -86,8 +116,8 @@ for idx, problem in enumerate(tqdm.tqdm(problems)):
     # print(response)
 
     # Check if response contains "Wait" or "wait"
-    # wait_count = response.count("Wait") + response.count("wait")
-    # print("Total number of 'wait' occurrences:", wait_count)
+    wait_count = response.count("Wait") + response.count("wait")
+    print("Total number of 'wait' occurrences:", wait_count)
     # Check if response contains "Wait" or "wait"
     # os.makedirs("hidden_state", exist_ok=True)
     # if "Wait" in response or "wait" in response:
@@ -96,6 +126,6 @@ for idx, problem in enumerate(tqdm.tqdm(problems)):
     #     output_file = f"responses/problem_{idx:04d}.json"
     # hidden_file = f"hidden_state/problem_{idx:04d}.pt"
     # torch.save(hidden_states, hidden_file)
-    output_file = f"icv/problem_{idx:04d}.json"
+    output_file = f"icv_pca/problem_{idx:04d}.json"
     with open(output_file, "w") as f:
         json.dump(response_obj, f)

@@ -92,7 +92,6 @@ def extract_token_before_wait(
     hidden_state_dir: str = "./hidden_state",
     model_name: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
 ):
-    # TODO: analyse the 7B response and extract the token position
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     last_token_before_wait = []
     last_token_before_wo_wait = []
@@ -144,8 +143,6 @@ def token_rank_before_wait(
     model_name: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
     token_list: List[int] = [382, 3983, 13],
 ):
-    # TODO: extract the token hidden state and compute the rank
-        # TODO: analyse the 7B response and extract the token position
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     last_token_before_wait = []
     layers = 0
@@ -211,7 +208,6 @@ def token_rank_before_wait(
     #     rank_list.append(rank)
 
     # # Visualize the rank list
-    # # TODO: use wait have 4 forms
     # # TODO: why some token has 1, 47, 3584 dim
     # plt.figure(figsize=(10, 6))
     # sns.lineplot(x=range(len(rank_list)), y=rank_list, marker="o")
