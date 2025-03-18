@@ -2,6 +2,8 @@ import os
 import re
 import json
 import torch
+import seaborn as sns
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from typing import List
@@ -88,7 +90,7 @@ def extract_keywords(
 def extract_token_before_wait(
     response_dir: str = "./reflect_responses",
     hidden_state_dir: str = "./hidden_state",
-    model_name: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+    model_name: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
 ):
     # TODO: analyse the 7B response and extract the token position
     tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -135,35 +137,93 @@ def extract_token_before_wait(
     }
     return last_token_before_wait_dict_tokenized, last_token_before_wait_length
 
-    # ## find other position for last token
-    # index = (input_ids[0] == 193).nonzero().squeeze()
-    # if index.dim() == 0:  # if it's a scalar, add a dimension
-    #     index = index.unsqueeze(0)
-    # token_wo_wait = []
-    # for i in range(index.shape[0]):
-    #     input_length = input_ids[0].shape[0]
-    #     if index[i] + 100 > input_length:
-    #         search_end_index = input_length
-    #     else:
-    #         search_end_index = index[i] + 100
-    #     flag = False
-    #     for word in wait_list:
-    #         if word in input_ids[0][index[i]:search_end_index]:
-    #             flag = True
-    #             print(tokenizer.decode(input_ids[0][index[i]:search_end_index]))
-    #             break
-    #     if not flag:
-    #         token_wo_wait.append(index[i].item())
-
 
 def token_rank_before_wait(
     response_dir: str = "./reflect_responses",
     hidden_state_dir: str = "./hidden_state",
-    model_name: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+    model_name: str = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+    token_list: List[int] = [382, 3983, 13],
 ):
-    pass
+    # TODO: extract the token hidden state and compute the rank
+        # TODO: analyse the 7B response and extract the token position
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    last_token_before_wait = []
+    layers = 0
+    last_token_before_wo_wait = []
+    for idx, path in enumerate(tqdm(os.listdir(response_dir))):
+        if idx > 5:
+            break
+        with open(os.path.join(response_dir, path), "r") as f:
+            response = json.load(f)
+        hidden_states = torch.load(
+            os.path.join(hidden_state_dir, path.split(".")[0] + ".pt")
+        )
+        layers = len(hidden_states[-1])
+        input_ids = tokenizer(response["response"], return_tensors="pt")[
+            "input_ids"
+        ].to("cuda:0")
+        problem_length = tokenizer(response["problem"], return_tensors="pt")[
+            "input_ids"
+        ].shape[1]
+        input_length = input_ids.shape[1]
+        wait_word = ["wait", "Wait", " wait", " Wait"]
+        wait_list = []
+        for word in wait_word:
+            wait_list.append(
+                tokenizer(word, return_tensors="pt")["input_ids"][0][1].item()
+            )
+        indices = []
+        for word in wait_list:
+            index = (input_ids[0] == word).nonzero().squeeze()
+            if index.dim() == 0:  # if it's a scalar, add a dimension
+                index = index.unsqueeze(0)
+            indices.append(index)
+        res = torch.cat(indices)
+        for idy in res:
+            token_before_wait = input_ids[0][idy-1].item()
+            if token_before_wait == token_list[0]:
+                last_token_before_wait.append(hidden_states[idy-1-problem_length])
+        for token in token_list:
+            index = (input_ids[0] == token).nonzero().squeeze()
+            if index.dim() == 0:  # if it's a scalar, add a dimension
+                index = index.unsqueeze(0)
+            for i in range(index.shape[0]):
+                input_length = input_ids[0].shape[0]
+                if index[i] + 50 > input_length:
+                    search_end_index = input_length
+                else:
+                    search_end_index = index[i] + 50
+                flag = False
+                for word in wait_list:
+                    if word in input_ids[0][index[i]:search_end_index]:
+                        flag = True
+                        break
+                if not flag:
+                    last_token_before_wo_wait.append(hidden_states[index[i]-problem_length])
+    # rank_list = []
+    # for layer in range(layers):
+    #     token_rep_one_layer = torch.cat([
+    #         x[layer].mean(dim=1, keepdim=True) if x[layer].shape[1] > 1 else x[layer]
+    #         for x in last_token_before_wait
+    #     ]).squeeze()
+    #     token_rep_one_layer = token_rep_one_layer.to(torch.float32)
+    #     rank = compute_rank(token_rep_one_layer)
+    #     rank_list.append(rank)
 
-
+    # # Visualize the rank list
+    # # TODO: use wait have 4 forms
+    # # TODO: why some token has 1, 47, 3584 dim
+    # plt.figure(figsize=(10, 6))
+    # sns.lineplot(x=range(len(rank_list)), y=rank_list, marker="o")
+    # plt.title("Rank of Token Representations Across Layers")
+    # plt.xlabel("Layer")
+    # plt.ylabel("Rank")
+    # plt.grid(True)
+    # plt.show()
+    
+    return last_token_before_wait, last_token_before_wo_wait
+    
+        
 def compute_rank(hidden_states, threshold=1e-5):
     """
     Computes the numerical rank of the hidden states matrix using SVD.
@@ -198,7 +258,7 @@ if __name__ == "__main__":
     # print(extract_keywords(response_dir="./responses"))
 
     # the token before wait
-    # print(extract_token_before_wait())
+    print(extract_token_before_wait())
 
     # analyse the rank of the token before wait
-    pass
+    # token_rank_before_wait()
