@@ -3,3 +3,8 @@
 
 *.json
 *.pt
+*.png
+*.jpg
+*.ipynb
+.vscode/
+__pycache__/
