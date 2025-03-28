@@ -76,22 +76,22 @@ dataset = load_dataset("HuggingFaceH4/MATH-500")
 
 # Create output directory if it doesn't exist
 os.makedirs("responses", exist_ok=True)
-os.makedirs("long_responses", exist_ok=True)
-os.makedirs("long_hidden_state", exist_ok=True)
+os.makedirs("long_responses2", exist_ok=True)
+os.makedirs("long_hidden_state2", exist_ok=True)
 problems = dataset["test"]["problem"]
 os.makedirs("icv_pca", exist_ok=True)
 torch.set_grad_enabled(False)
 
 # Process each problem and get response
 for idx, problem in enumerate(tqdm(problems)):
-    if idx > 1:
-        break
     # Prepare prompt for inference
-    prompt = f"""
-    A conversation between User and Assistant. The user asks a question, and the Assistant solves it. 
-    The assistant first thinks about the reasoning process in the mind and then provides the user with the answer. 
-    The reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, 
-    i.e., <think> reasoning process here </think> <answer> answer here </answer>. User: {problem} Assistant:
+    prompt = f"""<|im_start|>system
+    Please reason step by step, and put your final answer within \\boxed{{}}.
+    <|im_end|>
+    <|im_start|>user
+    {problem}
+    <|im_end|>
+    <|im_start|>assistant
     """
     inputs = tokenizer(prompt, return_tensors="pt").to("cuda:0")
     
@@ -134,8 +134,8 @@ for idx, problem in enumerate(tqdm(problems)):
     #     output_file = f"reflect_responses/problem_{idx:04d}.json"
     # else:
     #     output_file = f"responses/problem_{idx:04d}.json"
-    hidden_file = f"long_hidden_state/problem_{idx:04d}.pt"
+    hidden_file = f"long_hidden_state2/problem_{idx:04d}.pt"
     torch.save(hidden_states, hidden_file)
-    output_file = f"long_responses/problem_{idx:04d}.json"
+    output_file = f"long_responses2/problem_{idx:04d}.json"
     with open(output_file, "w") as f:
         json.dump(response_obj, f)

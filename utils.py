@@ -88,3 +88,29 @@ class ICVLayer(nn.Module):
         if self.icv is not None:
             x += self.lam * self.icv.repeat(x.shape[0], x.shape[1], 1)
         return x
+
+def numerical_rank(matrix, tol=None):
+    """
+    Compute the numerical rank of a matrix.
+    Args:
+        matrix: Matrix (numpy array).
+        tol: Tolerance for singular values.
+    Returns:
+        Numerical rank of the matrix.
+    """
+    if tol is None:
+        tol = np.max(matrix.shape) * np.spacing(np.linalg.norm(matrix))
+    s = np.linalg.svd(matrix, compute_uv=False)
+    return np.sum(s > tol)
+
+def neumann_entropy(matrix: torch.Tensor) -> torch.Tensor:
+    """
+    Compute the Neumann entropy of a matrix using PyTorch.
+    Args:
+        matrix: Matrix (torch.Tensor).
+    Returns:
+        Neumann entropy of the matrix as a torch.Tensor.
+    """
+    s = torch.linalg.svdvals(matrix)
+    s = s[s > 0]
+    return -torch.sum(s * torch.log(s))
