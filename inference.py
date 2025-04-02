@@ -4,11 +4,7 @@ from datasets import load_dataset
 import json
 import os
 from tqdm import tqdm
-from vllm import LLM, SamplingParams
-from transformers import AutoTokenizer
-from utils import add_icv_layers
-
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+from functools import lru_cache
 
 # TODO: wait number and the model size
 # TODO: wait helps or deteriorates the performance
@@ -117,19 +113,19 @@ for idx, problem in enumerate(tqdm(problems)):
     #     print(f"Length of hidden states at step {i}: {len(hidden_state)}")
     #     print(f"One layer shape ", hidden_state[0].shape)
 
-    # Decode the response
-    response = tokenizer.decode(generated_tokens, skip_special_tokens=True)
-    # response = o[0].outputs[0].text
-    # Create response object
-    response_obj = {"problem": prompt, "response": response}
-    # print("###### Response ########")
-    # print(response)
+    generated_tokens, hidden_states = generate_response(problem)
 
-    # Save hidden states and response
-    hidden_file = f"long_hidden_state2/problem_{idx:04d}.pt"
-    torch.save(hidden_states, hidden_file)
+    # Decode the response and save results
+    response = tokenizer.decode(generated_tokens, skip_special_tokens=True)
     
-    # Create response object and save to file
+    # Save hidden states (only keep necessary layers)
+    hidden_file = f"long_hidden_state2/problem_{idx:04d}.pt"
+    torch.save([h[0] for h in hidden_states], hidden_file)
+    
+    # Create and save response object
     output_file = f"long_responses2/problem_{idx:04d}.json"
     with open(output_file, "w") as f:
-        json.dump(response_obj, f)
+        json.dump({
+            "problem": problem,
+            "response": response
+        }, f)
