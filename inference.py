@@ -125,17 +125,11 @@ for idx, problem in enumerate(tqdm(problems)):
     # print("###### Response ########")
     # print(response)
 
-    # Check if response contains "Wait" or "wait"
-    wait_count = response.count("Wait") + response.count("wait")
-    print("Total number of 'wait' occurrences:", wait_count)
-    # Check if response contains "Wait" or "wait"
-    # os.makedirs("hidden_state", exist_ok=True)
-    # if "Wait" in response or "wait" in response:
-    #     output_file = f"reflect_responses/problem_{idx:04d}.json"
-    # else:
-    #     output_file = f"responses/problem_{idx:04d}.json"
+    # Save hidden states and response
     hidden_file = f"long_hidden_state2/problem_{idx:04d}.pt"
     torch.save(hidden_states, hidden_file)
+    
+    # Create response object and save to file
     output_file = f"long_responses2/problem_{idx:04d}.json"
     with open(output_file, "w") as f:
         json.dump(response_obj, f)
