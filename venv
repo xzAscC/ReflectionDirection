@@ -1,0 +1,4 @@
+
+export OLLAMA_API_BASE=http://127.0.0.1:11434 # Mac/Linux
+
+aider --model ollama_chat/deepseek-r1:32b

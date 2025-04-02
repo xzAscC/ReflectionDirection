@@ -7,3 +7,4 @@
 *.jpg
 .vscode/
 __pycache__/
+.aider*
