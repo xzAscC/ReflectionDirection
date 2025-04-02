@@ -16,6 +16,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(
     model_name, device_map="auto", torch_dtype=torch.bfloat16
 )
+model.gradient_checkpointing = False
 
 ########################################
 # last_token_before_wait = torch.load("last_token_before_wait.pt")
