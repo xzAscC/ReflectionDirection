@@ -12,9 +12,14 @@ model = AutoModelForCausalLM.from_pretrained(
 dataset_name = "HuggingFaceH4/MATH-500"
 dataset = load_dataset(dataset_name)
 
+# Step 3: Define a prompt function
+def create_prompt(problem):
+    return f"Solve the following math problem:\n{problem}\n\nShow your thinking process and provide the final answer in \\boxed{{}} format."
+
 # Step 3: Tokenize the dataset
 def tokenize_function(examples):
-    return tokenizer(examples["problem"], padding="max_length", truncation=True)
+    prompts = [create_prompt(problem) for problem in examples["problem"]]
+    return tokenizer(prompts, padding="max_length", truncation=True)
 
 tokenized_datasets = dataset.map(tokenize_function, batched=True)
 
