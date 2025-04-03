@@ -42,7 +42,10 @@ def generate_response(input_ids):
 test_problems = tokenized_datasets["test"]["input_ids"]
 responses = [generate_response(torch.tensor([problem]))[0] for problem in test_problems]
 
-# Print some example responses
-for i, response in enumerate(responses[:5]):
-    print(f"Problem {i+1}: {dataset['test']['problem'][i]}")
-    print(f"Response: {response}\n")
+# Save the results to a file
+with open("inference_results.txt", "w") as f:
+    for i, response in enumerate(responses):
+        f.write(f"Problem {i+1}: {dataset['test']['problem'][i]}\n")
+        f.write(f"Response: {response}\n\n")
+
+print("Results have been saved to inference_results.txt")
