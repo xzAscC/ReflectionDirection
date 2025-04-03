@@ -28,10 +28,10 @@ def setup_logger():
 
 # Step 4: Define a prompt function
 def create_prompt(problem):
-    # improve the prompt to be more specific and clear, AI!
+    # Improved prompt to be more specific and clear
     return f"""
-        Solve the following math problem:\n{problem}\n\n
-        Show your thinking process and provide the final answer in \\boxed{{}} format.
+        You are a math expert. Please solve the following problem:\n{problem}\n\n
+        Show your step-by-step thinking process and provide the final answer in \\boxed{{}} format.
     """
 
 
