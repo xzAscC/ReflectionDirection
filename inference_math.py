@@ -74,4 +74,37 @@ for i, response in enumerate(responses):
     logger.info(f"Problem {i+1}: {dataset['test']['problem'][i]}")
     logger.info(f"Response: {response}\n")
 
-logger.info("Results have been saved to inference_results.log")
+# Main function to encapsulate the main logic                                                          
+def main():                                                                                            
+    # Get the logger instance                                                                          
+    logger = setup_logger()                                                                            
+                                                                                                       
+    # Load the tokenizer and model                                                                     
+    model_name = "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"                                             
+    tokenizer = AutoTokenizer.from_pretrained(model_name)                                              
+    model = AutoModelForCausalLM.from_pretrained(                                                      
+        model_name, device_map="auto", torch_dtype=torch.bfloat16                                      
+    )                                                                                                  
+                                                                                                       
+    # Load the dataset                                                                                 
+    dataset_name = "HuggingFaceH4/MATH-500"                                                            
+    dataset = load_dataset(dataset_name)                                                               
+                                                                                                       
+    # Tokenize the dataset                                                                             
+    tokenized_datasets = dataset.map(lambda x: tokenize_function(x, tokenizer), batched=True)          
+                                                                                                       
+    # Example of generating responses for the test set                                                 
+    test_problems = tokenized_datasets["test"]["input_ids"]                                            
+    responses = [generate_response(torch.tensor([problem]), model, tokenizer)[0] for problem in        
+test_problems]                                                                                         
+                                                                                                       
+    # Save the results to a logger file and stdout                                                     
+    for i, response in enumerate(responses):                                                           
+        logger.info(f"Problem {i+1}: {dataset['test']['problem'][i]}")                                 
+        logger.info(f"Response: {response}\n")                                                         
+                                                                                                       
+    logger.info("Results have been saved to inference_results.log")                                    
+                                                                                                       
+# Ensure the main function is called only when the script is executed directly                         
+if __name__ == "__main__":                                                                             
+    main()        
