@@ -67,15 +67,14 @@ def main():
                                                                                                        
     # Example of generating responses for the test set                                                 
     test_problems = tokenized_datasets["test"]["input_ids"]                                            
-    responses = [generate_response(torch.tensor([problem]), model, tokenizer)[0] for problem in        
-test_problems]                                                                                         
+    responses = [generate_response(torch.tensor([problem]), model, tokenizer)[0] for problem in test_problems]
                                                                                                        
     # Save the results to a logger file and stdout                                                     
     for i, response in enumerate(responses):                                                           
         logger.info(f"Problem {i+1}: {dataset['test']['problem'][i]}")                                 
         logger.info(f"Response: {response}\n")                                                         
                                                                                                        
-    logger.info("Results have been saved to inference_results.log")                                    
+    logger.info("Results have been saved to inference_results.log")
                                                                                                        
 # Ensure the main function is called only when the script is executed directly                         
 if __name__ == "__main__":                                                                             
