@@ -16,7 +16,10 @@ dataset = load_dataset(dataset_name)
 # Step 3: Define a prompt function
 # TODO: Create a function to generate prompts for the model
 def create_prompt(problem):
-    return f"Solve the following math problem:\n{problem}\n\nShow your thinking process and provide the final answer in \\boxed{{}} format."
+    return f"""
+        Solve the following math problem:\n{problem}\n\n
+        Show your thinking process and provide the final answer in \\boxed{{}} format.
+    """
 
 
 # Step 3: Tokenize the dataset

@@ -16,8 +16,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(
     model_name, device_map="auto", torch_dtype=torch.bfloat16
 )
-model.gradient_checkpointing = False
-
+torch.no_grad()
 ########################################
 # last_token_before_wait = torch.load("last_token_before_wait.pt")
 # last_token_before_wo_wait = torch.load("last_token_before_wo_wait.pt")
@@ -92,20 +91,20 @@ for idx, problem in enumerate(tqdm(problems)):
     """
     inputs = tokenizer(prompt, return_tensors="pt").to("cuda:0")
     
-    # # Generate output text with output_hidden_states=True to get hidden states
-    outputs = model.generate(
-        inputs.input_ids,
-        max_new_tokens=8196,
-        temperature=0.7,
-        do_sample=True,
-        pad_token_id=tokenizer.pad_token_id,
-        output_hidden_states=True,
-        return_dict_in_generate=True,
-    )
+    # # # Generate output text with output_hidden_states=True to get hidden states
+    # outputs = model.generate(
+    #     inputs.input_ids,
+    #     max_new_tokens=8196,
+    #     temperature=0.7,
+    #     do_sample=True,
+    #     pad_token_id=tokenizer.pad_token_id,
+    #     output_hidden_states=True,
+    #     return_dict_in_generate=True,
+    # )
 
-    # # Get the generated tokens and hidden states
-    generated_tokens = outputs.sequences[0]
-    hidden_states = outputs.hidden_states
+    # # # Get the generated tokens and hidden states
+    # generated_tokens = outputs.sequences[0]
+    # hidden_states = outputs.hidden_states
 
     # Print the structure of hidden states
     # print("\n###### Hidden States Structure ########")
