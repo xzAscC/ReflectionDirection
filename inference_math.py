@@ -12,22 +12,31 @@ model = AutoModelForCausalLM.from_pretrained(
 dataset_name = "HuggingFaceH4/MATH-500"
 dataset = load_dataset(dataset_name)
 
+
 # Step 3: Define a prompt function
+# TODO: Create a function to generate prompts for the model
 def create_prompt(problem):
-    return f"Solve the following math problem:\n{problem}\n\nShow your thinking process and provide the final answer in \\boxed{{}} format."
+    return f"""
+        Solve the following math problem:\n{problem}\n\n
+        Show your thinking process and provide the final answer in \\boxed{{}} format.
+    """
+
 
 # Step 3: Tokenize the dataset
 def tokenize_function(examples):
     prompts = [create_prompt(problem) for problem in examples["problem"]]
     return tokenizer(prompts, padding="max_length", truncation=True)
 
+
 tokenized_datasets = dataset.map(tokenize_function, batched=True)
+
 
 # Step 4: Perform inference
 def generate_response(input_ids):
     with torch.no_grad():
         outputs = model.generate(input_ids=input_ids.to(model.device))
     return tokenizer.batch_decode(outputs, skip_special_tokens=True)
+
 
 # Example of generating responses for the test set
 test_problems = tokenized_datasets["test"]["input_ids"]
