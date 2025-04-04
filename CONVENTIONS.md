@@ -1,0 +1,2 @@
+- Use types everywhere possible.
+- finish a Docstring when writing a function or class
